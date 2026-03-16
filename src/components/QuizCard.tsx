@@ -16,32 +16,68 @@ export default function QuizCard({
   totalQuestions,
   onNext,
 }: Props) {
-  const [selected, setSelected] = useState<string | null>(null);
-  const isAnswered = selected !== null;
-  const isCorrect = selected === question.correctLabel;
+  const [selectedLabels, setSelectedLabels] = useState<string[]>([]);
+  const [isSubmitted, setIsSubmitted] = useState(false);
+
+  const requiredCount = question.correctLabels.length;
+  const isMultiple = requiredCount > 1;
+
+  // 正解判定：選んだラベルと正解ラベルが完全一致
+  const isCorrect =
+    isSubmitted &&
+    selectedLabels.length === requiredCount &&
+    question.correctLabels.every((l) => selectedLabels.includes(l));
 
   const handleSelect = (label: string) => {
-    if (!isAnswered) setSelected(label);
+    if (isSubmitted) return;
+    if (!isMultiple) {
+      // 1択：選んだ瞬間に確定
+      setSelectedLabels([label]);
+      setIsSubmitted(true);
+    } else {
+      // 複数択：トグル選択
+      setSelectedLabels((prev) =>
+        prev.includes(label)
+          ? prev.filter((l) => l !== label)
+          : prev.length < requiredCount
+          ? [...prev, label]
+          : prev
+      );
+    }
+  };
+
+  const handleSubmit = () => {
+    if (selectedLabels.length === requiredCount) setIsSubmitted(true);
   };
 
   const choiceBorderStyle = (label: string): string => {
-    if (!isAnswered) {
-      return "bg-white border-2 border-gray-200 hover:border-blue-400 hover:bg-blue-50 cursor-pointer active:scale-[0.99]";
+    if (!isSubmitted) {
+      const isSelected = selectedLabels.includes(label);
+      return isSelected
+        ? "bg-blue-50 border-2 border-blue-500 cursor-pointer"
+        : "bg-white border-2 border-gray-200 hover:border-blue-400 hover:bg-blue-50 cursor-pointer active:scale-[0.99]";
     }
-    if (label === question.correctLabel) {
-      return "bg-green-50 border-2 border-green-500";
-    }
-    if (label === selected) {
-      return "bg-red-50 border-2 border-red-400";
-    }
+    if (question.correctLabels.includes(label)) return "bg-green-50 border-2 border-green-500";
+    if (selectedLabels.includes(label)) return "bg-red-50 border-2 border-red-400";
     return "bg-white border-2 border-gray-200";
   };
 
   const choiceTextStyle = (label: string): string => {
-    if (!isAnswered) return "text-gray-800";
-    if (label === question.correctLabel) return "text-green-800";
-    if (label === selected) return "text-red-700";
+    if (!isSubmitted) return "text-gray-800";
+    if (question.correctLabels.includes(label)) return "text-green-800";
+    if (selectedLabels.includes(label)) return "text-red-700";
     return "text-gray-800";
+  };
+
+  const labelBadgeStyle = (label: string): string => {
+    if (!isSubmitted) {
+      return selectedLabels.includes(label)
+        ? "bg-blue-500 border-blue-500 text-white"
+        : "border-gray-300 text-gray-500";
+    }
+    if (question.correctLabels.includes(label)) return "bg-green-500 border-green-500 text-white";
+    if (selectedLabels.includes(label)) return "bg-red-400 border-red-400 text-white";
+    return "border-gray-300 text-gray-600";
   };
 
   return (
@@ -67,8 +103,17 @@ export default function QuizCard({
         <span className="text-xs text-gray-400">{question.source}</span>
       </div>
 
+      {/* 複数選択の場合はガイダンス */}
+      {isMultiple && !isSubmitted && (
+        <div className="bg-yellow-50 border border-yellow-200 rounded-xl px-3 py-2 text-xs text-yellow-800">
+          {selectedLabels.length < requiredCount
+            ? `あと ${requiredCount - selectedLabels.length} 個選んでください（計${requiredCount}個）`
+            : `${requiredCount}個選びました。「答え合わせ」を押してください。`}
+        </div>
+      )}
+
       {/* 問題文 */}
-      <p className="text-sm font-medium text-gray-800 leading-relaxed border-l-4 border-blue-400 pl-3">
+      <p className="text-sm font-medium text-gray-800 leading-relaxed border-l-4 border-blue-400 pl-3 whitespace-pre-wrap">
         {question.text}
       </p>
 
@@ -81,56 +126,35 @@ export default function QuizCard({
               className={`w-full text-left p-3 rounded-xl transition-all duration-200 ${choiceBorderStyle(choice.label)}`}
             >
               <div className="flex items-start gap-2">
-                {/* ラベル */}
                 <span
-                  className={`shrink-0 w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold border
-                    ${
-                      !isAnswered
-                        ? "border-gray-300 text-gray-500"
-                        : choice.label === question.correctLabel
-                        ? "bg-green-500 border-green-500 text-white"
-                        : choice.label === selected
-                        ? "bg-red-400 border-red-400 text-white"
-                        : "border-gray-300 text-gray-600"
-                    }`}
+                  className={`shrink-0 w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold border ${labelBadgeStyle(choice.label)}`}
                 >
                   {choice.label}
                 </span>
-
-                {/* 選択肢テキスト */}
-                <span
-                  className={`text-sm leading-relaxed ${choiceTextStyle(choice.label)}`}
-                >
+                <span className={`text-sm leading-relaxed ${choiceTextStyle(choice.label)}`}>
                   {choice.text}
                 </span>
-
-                {/* 正解・不正解アイコン */}
-                {isAnswered && choice.label === question.correctLabel && (
-                  <span className="shrink-0 ml-auto text-green-600 font-bold text-sm">
-                    ✓
-                  </span>
+                {isSubmitted && question.correctLabels.includes(choice.label) && (
+                  <span className="shrink-0 ml-auto text-green-600 font-bold text-sm">✓</span>
                 )}
-                {isAnswered &&
-                  choice.label === selected &&
-                  choice.label !== question.correctLabel && (
-                    <span className="shrink-0 ml-auto text-red-500 font-bold text-sm">
-                      ✗
-                    </span>
+                {isSubmitted &&
+                  selectedLabels.includes(choice.label) &&
+                  !question.correctLabels.includes(choice.label) && (
+                    <span className="shrink-0 ml-auto text-red-500 font-bold text-sm">✗</span>
                   )}
               </div>
             </button>
 
-            {/* 各選択肢の解説（回答後に表示） */}
-            {isAnswered && (
+            {/* 解説（回答後） */}
+            {isSubmitted && (
               <div
-                className={`mt-1 mx-1 px-3 py-2 rounded-lg text-xs leading-relaxed
-                  ${
-                    choice.label === question.correctLabel
-                      ? "bg-green-50 text-green-800 border border-green-200"
-                      : choice.label === selected
-                      ? "bg-red-50 text-red-700 border border-red-200"
-                      : "bg-gray-50 text-gray-800 border border-gray-200"
-                  }`}
+                className={`mt-1 mx-1 px-3 py-2 rounded-lg text-xs leading-relaxed ${
+                  question.correctLabels.includes(choice.label)
+                    ? "bg-green-50 text-green-800 border border-green-200"
+                    : selectedLabels.includes(choice.label)
+                    ? "bg-red-50 text-red-700 border border-red-200"
+                    : "bg-gray-50 text-gray-800 border border-gray-200"
+                }`}
               >
                 {choice.explanation}
               </div>
@@ -139,18 +163,31 @@ export default function QuizCard({
         ))}
       </div>
 
-      {/* 結果サマリー */}
-      {isAnswered && (
-        <div
-          className={`p-3 rounded-xl text-center font-bold text-sm
-            ${isCorrect ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"}`}
+      {/* 複数選択の答え合わせボタン */}
+      {isMultiple && !isSubmitted && selectedLabels.length === requiredCount && (
+        <button
+          onClick={handleSubmit}
+          className="w-full py-3 bg-yellow-500 hover:bg-yellow-600 text-white font-semibold rounded-xl transition-colors"
         >
-          {isCorrect ? "正解！よくできました" : `不正解... 正解は「${question.correctLabel}」でした`}
+          答え合わせ
+        </button>
+      )}
+
+      {/* 結果サマリー */}
+      {isSubmitted && (
+        <div
+          className={`p-3 rounded-xl text-center font-bold text-sm ${
+            isCorrect ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"
+          }`}
+        >
+          {isCorrect
+            ? "正解！よくできました"
+            : `不正解... 正解は「${question.correctLabels.join("・")}」でした`}
         </div>
       )}
 
       {/* 次へボタン */}
-      {isAnswered && (
+      {isSubmitted && (
         <button
           onClick={() => onNext(isCorrect)}
           className="w-full py-3 bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white font-semibold rounded-xl transition-colors duration-200"

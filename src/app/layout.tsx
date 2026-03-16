@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
+import ExamCountdown from "@/components/ExamCountdown";
+import BottomNav from "@/components/BottomNav";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -24,10 +26,15 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="ja">
-      <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
-      >
-        {children}
+      <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
+        {/* 試験日カウントダウン（全画面共通・最上部） */}
+        <ExamCountdown />
+        {/* メインコンテンツ（ボトムナビ分の余白を確保） */}
+        <div className="pb-20">
+          {children}
+        </div>
+        {/* ボトムナビゲーション */}
+        <BottomNav />
       </body>
     </html>
   );
