@@ -1,3 +1,21 @@
+// 試験設定
+export type ExamSettings = {
+  selectedTerm: "前期" | "後期";
+};
+
+const EXAM_SETTINGS_KEY = "hoikushi_exam_settings";
+
+export function getExamSettings(): ExamSettings {
+  if (typeof window === "undefined") return { selectedTerm: "前期" };
+  const raw = localStorage.getItem(EXAM_SETTINGS_KEY);
+  return raw ? (JSON.parse(raw) as ExamSettings) : { selectedTerm: "前期" };
+}
+
+export function saveExamSettings(settings: ExamSettings): void {
+  localStorage.setItem(EXAM_SETTINGS_KEY, JSON.stringify(settings));
+  window.dispatchEvent(new Event("storage"));
+}
+
 // クイズ・直前対策の結果ログ
 export type StudyRecord = {
   id: string;

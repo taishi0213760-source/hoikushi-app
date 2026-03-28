@@ -4,10 +4,10 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 
 const tabs = [
-  { href: "/", label: "ホーム", icon: "🏠" },
-  { href: "/quiz", label: "クイズ", icon: "📝" },
-  { href: "/practice", label: "直前対策", icon: "⚡" },
-  { href: "/log", label: "ログ", icon: "📊" },
+  { href: "/", label: "ホーム", icon: "home" },
+  { href: "/quiz", label: "クイズ", icon: "quiz" },
+  { href: "/practice", label: "直前対策", icon: "bolt" },
+  { href: "/log", label: "ログ", icon: "bar_chart" },
 ];
 
 export default function BottomNav() {
@@ -26,7 +26,12 @@ export default function BottomNav() {
               isActive ? "text-blue-600" : "text-gray-400 hover:text-gray-600"
             }`}
           >
-            <span className="text-xl leading-none">{tab.icon}</span>
+            <span
+              className="material-symbols-outlined"
+              style={{ fontSize: "24px", lineHeight: 1 }}
+            >
+              {tab.icon}
+            </span>
             <span className={isActive ? "font-semibold" : ""}>{tab.label}</span>
           </Link>
         );
